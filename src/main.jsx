@@ -8,12 +8,12 @@ import { RouterProvider, createBrowserRouter } from 'react-router-dom'
 import Home from './pages/Home.jsx'
 import { AuthLayout, Login } from './components/index.js'
 
-import AddPost from "./pages/AddPost";
-import Signup from './pages/Signup'
-import EditPost from "./pages/EditPost";
-import Post from "./pages/Post";
-import AllPosts from "./pages/AllPosts";
-import MyPosts from "./pages/MyPosts";  // ✅ Import MyPosts
+import AddPost from "./pages/AddPost.jsx";  // ✅ Add .jsx
+import Signup from './pages/Signup.jsx'
+import EditPost from "./pages/EditPost.jsx";  // ✅ Add .jsx
+import Post from "./pages/Post.jsx";  // ✅ Add .jsx
+import AllPosts from "./pages/AllPosts.jsx";  // ✅ Add .jsx
+import MyPosts from "./pages/MyPosts.jsx";  // ✅ Add .jsx
 
 const router = createBrowserRouter([
   {
@@ -50,7 +50,7 @@ const router = createBrowserRouter([
             ),
         },
         {
-            path: "/my-posts",  // ✅ Add My Posts route
+            path: "/my-posts",
             element: (
                 <AuthLayout authentication>
                     {" "}
@@ -91,3 +91,4 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     </Provider>
   </React.StrictMode>,
 )
+
