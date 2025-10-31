@@ -30,5 +30,4 @@ Check out the live version of the Blog App [here](https://blog-app-abhi.netlify.
 - Git
 
 
-## Folder Structure
 
