@@ -17,9 +17,10 @@ Check out the live version of the Blog App [here](https://blog-app-abhi.netlify.
 
 ## Tech Stack
 
-- **Frontend:** React, Redux, Tailwind CSS
+- **Frontend:** React, Redux, Tailwind CSS, React Router, React Hook Form, TinyMCE React, html-react-parser
 - **Backend:** Appwrite (Authentication, Database, File Storage)
-- **Deployment:** Netlify 
+- **Deployment:** Netlify
+
 
 ## Getting Started
 
