@@ -138,24 +138,83 @@ export class Service {
     // Get posts by specific user
     // In appwrite/config.js - inside your Service class
 
-async getUserPosts(userId) {
-    try {
-        return await this.databases.listDocuments(
-            conf.appwriteDatabaseId,
-            conf.appwriteCollectionId,
-            [
-                Query.equal("userId", userId)
-            ]
-        );
-    } catch (error) {
-        console.log("Appwrite service :: getUserPosts :: error", error);
-        return { documents: [] }; // Return empty array instead of false
+    async getUserPosts(userId) {
+        try {
+            return await this.databases.listDocuments(
+                conf.appwriteDatabaseId,
+                conf.appwriteCollectionId,
+                [
+                    Query.equal("userId", userId)
+                ]
+            );
+        } catch (error) {
+            console.log("Appwrite service :: getUserPosts :: error", error);
+            return { documents: [] }; // Return empty array instead of false
+        }
     }
-}
 
+    async createLike(postId, userId) {
+        try {
+            return await this.databases.createDocument(
+                conf.appwriteDatabaseId,
+                conf.appwriteLikesCollectionId,
+                ID.unique(),
+                { postId, userId }
+            );
+        } catch (error) {
+            console.log("Appwrite service :: createLike :: error", error);
+        }
+    }
 
+    async deleteLike(id) {
+        try {
+            return await this.databases.deleteDocument(
+                conf.appwriteDatabaseId,
+                conf.appwriteLikesCollectionId,
+                id
+            );
+        } catch (error) {
+            console.log("Appwrite service :: deleteLike :: error", error);
+        }
+    }
+    async createComment(postId, userId, content) {
+        try {
+            return await this.databases.createDocument(
+                conf.appwriteDatabaseId,
+                conf.appwriteCommentsCollectionId,
+                ID.unique(),
+                { postId, userId, content }
+            );
+        } catch (error) {
+            console.log("Appwrite service :: createComment :: error", error);
+        }
+    }
 
-
+    async getComments(postId) {
+        try {
+            return await this.databases.listDocuments(
+                conf.appwriteDatabaseId,
+                conf.appwriteCommentsCollectionId,
+                [ Query.equal("postId", [ postId ]), Query.orderDesc("$createdAt") ]
+            );
+        } catch (error) {
+            console.log("Appwrite service :: getComments :: error", error);
+            return { documents: [] };
+        }
+    }
+    async deleteComment(commentId) {
+        try {
+            await this.databases.deleteDocument(
+                conf.appwriteDatabaseId,
+                conf.appwriteCommentsCollectionId,
+                commentId
+            );
+            return true;
+        } catch (error) {
+            console.log("Appwrite service :: deleteComment :: error", error);
+            return false;
+        }
+    }
 }
 
 
