@@ -3,12 +3,11 @@ import appwriteService from "../appwrite/config"
 import { Link, useNavigate } from 'react-router-dom'
 import { useSelector } from "react-redux"
 
-function PostCard({ $id, title, featuredImage, userId }) {
+function PostCard({ $id, title, featuredImage, userId, authorName }) {
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
     const navigate = useNavigate();
     
-    // Get current user from Redux
     const userData = useSelector((state) => state.auth.userData);
     const isAuthor = userData && userId ? userData.$id === userId : false;
 
@@ -22,7 +21,6 @@ function PostCard({ $id, title, featuredImage, userId }) {
         setIsDeleting(true);
         try {
             const status = await appwriteService.deletePost($id);
-            
             if (status) {
                 await appwriteService.deleteFile(featuredImage);
                 window.location.reload();
@@ -43,8 +41,6 @@ function PostCard({ $id, title, featuredImage, userId }) {
         <>
             <Link to={`/post/${$id}`} className='block h-full'>
                 <div className='h-full w-full bg-white rounded-xl overflow-hidden border border-gray-200 shadow-md hover:shadow-2xl transition-all duration-300 ease-in-out group transform hover:-translate-y-2 animate-fadeInUp relative'>
-                    
-                    {/* Delete Button - ONLY SHOW IF USER IS AUTHOR */}
                     {isAuthor && (
                         <button
                             onClick={handleDeleteClick}
@@ -57,7 +53,6 @@ function PostCard({ $id, title, featuredImage, userId }) {
                         </button>
                     )}
 
-                    {/* Image with subtle overlay on hover */}
                     <div className='w-full aspect-video overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 relative'>
                         <img
                             src={appwriteService.getFileView(featuredImage)}
@@ -65,17 +60,19 @@ function PostCard({ $id, title, featuredImage, userId }) {
                             className='w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 ease-out'
                         />
                         <div className='absolute inset-0 bg-gradient-to-t from-black/50 via-black/0 to-black/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300'></div>
-
                         <div className='absolute top-4 right-4 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-semibold text-gray-700 opacity-0 group-hover:opacity-100 transform translate-x-2 group-hover:translate-x-0 transition-all duration-300'>
                             Article
                         </div>
                     </div>
 
                     <div className='p-5 sm:p-6'>
-                        <h2 className='text-lg sm:text-xl font-bold text-gray-900 line-clamp-2 group-hover:text-blue-600 transition-colors duration-200 mb-3 leading-tight'>
+                        <h2 className='text-lg sm:text-xl font-bold text-gray-900 line-clamp-2 group-hover:text-blue-600 transition-colors duration-200 mb-1 leading-tight'>
                             {title}
                         </h2>
-
+                        {/* Author display line */}
+                        <div className='text-sm text-gray-600 mb-3'>
+                            By: {authorName ? authorName : 'Unknown'}
+                        </div>
                         <div className='flex items-center gap-2 text-blue-600 font-medium text-sm opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 transition-all duration-300'>
                             <span>Read More</span>
                             <svg className="w-4 h-4 transform group-hover:translate-x-2 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -83,12 +80,10 @@ function PostCard({ $id, title, featuredImage, userId }) {
                             </svg>
                         </div>
                     </div>
-
                     <div className='h-1 w-0 group-hover:w-full bg-gradient-to-r from-blue-500 to-purple-500 transition-all duration-500 ease-out'></div>
                 </div>
             </Link>
 
-            {/* Delete Confirmation Modal */}
             {showDeleteModal && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={handleCancelDelete}>
                     <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 animate-bounceIn" onClick={(e) => e.stopPropagation()}>
@@ -97,15 +92,12 @@ function PostCard({ $id, title, featuredImage, userId }) {
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                             </svg>
                         </div>
-
                         <h3 className="text-xl font-bold text-gray-900 text-center mb-2">
                             Delete Post?
                         </h3>
-
                         <p className="text-gray-600 text-center mb-6">
                             Are you sure you want to delete <span className="font-semibold">"{title}"</span>? This action cannot be undone.
                         </p>
-
                         <div className="flex gap-3">
                             <button
                                 onClick={handleCancelDelete}
