@@ -18,10 +18,9 @@ export default function PostForm({ post }) {
 
     const navigate = useNavigate();
     const userData = useSelector((state) => state.auth.userData);
-    const [ isSubmitting, setIsSubmitting ] = useState(false);
-    const [ imagePreview, setImagePreview ] = useState(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [imagePreview, setImagePreview] = useState(null);
 
-    // Load existing image preview when editing
     React.useEffect(() => {
         if (post && post.featuredImage) {
             try {
@@ -31,35 +30,37 @@ export default function PostForm({ post }) {
                 console.error("Error loading image preview:", error);
             }
         }
-    }, [ post ]);
+    }, [post]);
 
+    // Safe author name!
+    const authorName =
+        userData?.name ||
+        userData?.username ||
+        (userData?.email ? userData.email.split('@')[0] : "Anonymous");
 
     const submit = async (data) => {
         setIsSubmitting(true);
         try {
+            // console.log("userData:", userData);
             if (post) {
                 // UPDATING EXISTING POST
-                const file = data.image[ 0 ] ? await appwriteService.uploadFile(data.image[ 0 ]) : null;
-
+                const file = data.image && data.image[0] ? await appwriteService.uploadFile(data.image[0]) : null;
                 if (file && file.$id) {
                     await appwriteService.deleteFile(post.featuredImage);
                 }
-
                 const { image, ...updateData } = data;
-
                 const dbPost = await appwriteService.updatePost(post.$id, {
                     ...updateData,
                     featuredImage: file ? file.$id : post.featuredImage,
+                    authorName,
                 });
-
                 if (dbPost) {
                     navigate(`/post/${dbPost.$id}`);
                 } else {
                     alert("Failed to update post");
                 }
             } else {
-                // CREATING NEW POST
-                if (!data.image || !data.image[ 0 ]) {
+                if (!data.image || !data.image[0]) {
                     alert("Please select an image");
                     setIsSubmitting(false);
                     return;
@@ -77,26 +78,21 @@ export default function PostForm({ post }) {
                     }
                     userId = currentUser.$id;
                 }
-
-                const file = await appwriteService.uploadFile(data.image[ 0 ]);
-
+                const file = await appwriteService.uploadFile(data.image[0]);
                 if (!file || !file.$id) {
                     console.error("File upload failed");
                     alert("Failed to upload image. Please try again.");
                     setIsSubmitting(false);
                     return;
                 }
-
                 const fileId = file.$id;
-
                 const { image, ...postData } = data;
-
                 const dbPost = await appwriteService.createPost({
                     ...postData,
                     featuredImage: fileId,
-                    userId: userId
+                    userId: userId,
+                    authorName, // always present!
                 });
-
                 if (dbPost) {
                     navigate(`/post/${dbPost.$id}`);
                 } else {
@@ -119,18 +115,15 @@ export default function PostForm({ post }) {
                 .toLowerCase()
                 .replace(/[^a-zA-Z\d\s]+/g, "-")
                 .replace(/\s/g, "-");
-
         return "";
     }, []);
 
     // Handle image preview
     const handleImageChange = (e) => {
-        const file = e.target.files[ 0 ];
+        const file = e.target.files[0];
         if (file) {
             const reader = new FileReader();
-            reader.onloadend = () => {
-                setImagePreview(reader.result);
-            };
+            reader.onloadend = () => setImagePreview(reader.result);
             reader.readAsDataURL(file);
         }
     };
@@ -141,16 +134,14 @@ export default function PostForm({ post }) {
                 setValue("slug", slugTransform(value.title), { shouldValidate: true });
             }
         });
-
         return () => subscription.unsubscribe();
-    }, [ watch, slugTransform, setValue ]);
+    }, [watch, slugTransform, setValue]);
 
     return (
         <form onSubmit={handleSubmit(submit)} className="flex flex-col lg:flex-row flex-wrap gap-6 animate-fadeIn">
-            {/* Left Column - Main Content */}
+            {/* Left Column */}
             <div className="w-full lg:w-2/3 space-y-6">
-                {/* Title Input */}
-                <div className="transform transition-all duration-300 hover:translate-x-1">
+                <div>
                     <Input
                         label="Title :"
                         placeholder="Enter your post title..."
@@ -161,34 +152,27 @@ export default function PostForm({ post }) {
                         <p className="text-red-500 text-sm mt-1 animate-shake">{errors.title.message}</p>
                     )}
                 </div>
-
-                {/* Slug Input */}
-                <div className="transform transition-all duration-300 hover:translate-x-1">
+                <div>
                     <Input
                         label="Slug :"
                         placeholder="post-url-slug"
                         className="mb-4"
                         {...register("slug", { required: "Slug is required" })}
-                        onInput={(e) => {
-                            setValue("slug", slugTransform(e.currentTarget.value), { shouldValidate: true });
-                        }}
+                        onInput={e => setValue("slug", slugTransform(e.currentTarget.value), { shouldValidate: true })}
                     />
                     {errors.slug && (
                         <p className="text-red-500 text-sm mt-1 animate-shake">{errors.slug.message}</p>
                     )}
                 </div>
-
-                {/* Rich Text Editor */}
-                <div className="transform transition-all duration-300">
+                {/* Your RTE stays! */}
+                <div>
                     <RTE label="Content :" name="content" control={control} defaultValue={getValues("content")} />
                 </div>
             </div>
-
-            {/* Right Column - Sidebar */}
+            {/* Right Column */}
             <div className="w-full lg:w-1/3 lg:pl-6">
                 <div className="lg:sticky lg:top-24 space-y-6">
-                    {/* Featured Image Card */}
-                    <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-all duration-300 transform hover:-translate-y-1 animate-slideInRight">
+                    <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-all duration-300">
                         <h3 className="text-sm font-semibold text-gray-700 mb-4 flex items-center">
                             <svg className="w-5 h-5 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -201,13 +185,11 @@ export default function PostForm({ post }) {
                             className="mb-4"
                             accept="image/png, image/jpg, image/jpeg, image/gif"
                             {...register("image", { required: !post })}
-                            onChange={(e) => {
+                            onChange={e => {
                                 register("image").onChange(e);
                                 handleImageChange(e);
                             }}
                         />
-
-                        {/* Image Preview - FIXED */}
                         {imagePreview && (
                             <div className="w-full mb-4 rounded-xl overflow-hidden bg-gradient-to-br from-gray-50 to-white shadow-md hover:shadow-xl transition-all duration-300">
                                 <div className="relative group">
@@ -216,8 +198,6 @@ export default function PostForm({ post }) {
                                         alt={post ? "Current image" : "Preview"}
                                         className="w-full h-48 object-cover border-2 border-gray-200 group-hover:border-blue-400 transition-all duration-300 group-hover:scale-105"
                                     />
-
-                                    {/* Hover Overlay */}
                                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
                                         <div className="absolute bottom-3 left-3 right-3">
                                             <div className="flex items-center justify-between text-white">
@@ -231,20 +211,14 @@ export default function PostForm({ post }) {
                                             </div>
                                         </div>
                                     </div>
-
-                                    {/* Corner Badge */}
                                     <div className="absolute top-3 right-3 bg-blue-500 text-white text-xs px-3 py-1 rounded-full shadow-lg font-medium opacity-0 group-hover:opacity-100 transition-all duration-300 transform group-hover:scale-110">
                                         Preview
                                     </div>
                                 </div>
                             </div>
                         )}
-
-
                     </div>
-
-                    {/* Status & Submit Card */}
-                    <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-all duration-300 transform hover:-translate-y-1 animate-slideInRight animation-delay-200">
+                    <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-all duration-300">
                         <h3 className="text-sm font-semibold text-gray-700 mb-4 flex items-center">
                             <svg className="w-5 h-5 mr-2 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
@@ -253,7 +227,7 @@ export default function PostForm({ post }) {
                             Publish Settings
                         </h3>
                         <Select
-                            options={[ "active", "inactive" ]}
+                            options={["active", "inactive"]}
                             label="Status"
                             className="mb-4"
                             {...register("status", { required: true })}
@@ -277,14 +251,14 @@ export default function PostForm({ post }) {
                                     <>
                                         {post ? (
                                             <>
-                                                <svg className="w-5 h-5 mr-2 transition-transform group-hover:rotate-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                                                 </svg>
                                                 Update Post
                                             </>
                                         ) : (
                                             <>
-                                                <svg className="w-5 h-5 mr-2 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
                                                 </svg>
                                                 Publish Post
@@ -294,44 +268,19 @@ export default function PostForm({ post }) {
                                 )}
                             </span>
                         </Button>
+                        <div className="mt-2 text-xs text-gray-500">Author: {authorName}</div>
                     </div>
                 </div>
             </div>
-
-            {/* Add CSS animations */}
             <style>{`
-                @keyframes fadeIn {
-                    from { opacity: 0; }
-                    to { opacity: 1; }
-                }
-                @keyframes slideInRight {
-                    from {
-                        opacity: 0;
-                        transform: translateX(30px);
-                    }
-                    to {
-                        opacity: 1;
-                        transform: translateX(0);
-                    }
-                }
-                @keyframes shake {
-                    0%, 100% { transform: translateX(0); }
-                    25% { transform: translateX(-5px); }
-                    75% { transform: translateX(5px); }
-                }
-                .animate-fadeIn {
-                    animation: fadeIn 0.5s ease-out;
-                }
-                .animate-slideInRight {
-                    animation: slideInRight 0.6s ease-out;
-                }
-                .animation-delay-200 {
-                    animation-delay: 0.2s;
-                }
-                .animate-shake {
-                    animation: shake 0.3s ease-in-out;
-                }
+                @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+                @keyframes slideInRight { from { opacity: 0; transform: translateX(30px); } to { opacity: 1; transform: translateX(0);}}
+                @keyframes shake { 0%, 100% { transform: translateX(0);} 25% { transform: translateX(-5px);} 75% { transform: translateX(5px);} }
+                .animate-fadeIn { animation: fadeIn 0.5s ease-out;}
+                .animate-slideInRight { animation: slideInRight 0.6s ease-out;}
+                .animate-shake { animation: shake 0.3s ease-in-out;}
             `}</style>
         </form>
     );
 }
+
