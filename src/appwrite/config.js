@@ -6,6 +6,7 @@ export class Service {
     databases;
     bucket;
 
+
     constructor() {
         this.client
             .setEndpoint(conf.appwriteUrl)
@@ -14,27 +15,27 @@ export class Service {
         this.bucket = new Storage(this.client);
     }
 
-    async createPost({ title, slug, content, featuredImage, status, userId }) {
+    async createPost({ title, slug, content, featuredImage, status, userId, authorName }) {
         try {
             return await this.databases.createDocument(
                 conf.appwriteDatabaseId,
                 conf.appwriteCollectionId,
-                slug,
+                slug, 
                 {
                     title,
                     content,
                     featuredImage,
                     status,
                     userId,
-                },
-
+                    authorName, 
+                }
             )
         } catch (error) {
-            console.log("Appwrite serive :: createPost :: error", error);
+            console.log("Appwrite service :: createPost :: error", error);
         }
     }
 
-    async updatePost(slug, { title, content, featuredImage, status }) {
+    async updatePost(slug, { title, content, featuredImage, status, authorName }) {
         try {
             return await this.databases.updateDocument(
                 conf.appwriteDatabaseId,
@@ -45,11 +46,11 @@ export class Service {
                     content,
                     featuredImage,
                     status,
-
+                    ...(authorName ? { authorName } : {})
                 }
             )
         } catch (error) {
-            console.log("Appwrite serive :: updatePost :: error", error);
+            console.log("Appwrite service :: updatePost :: error", error);
         }
     }
 
@@ -59,11 +60,10 @@ export class Service {
                 conf.appwriteDatabaseId,
                 conf.appwriteCollectionId,
                 slug
-
             )
             return true
         } catch (error) {
-            console.log("Appwrite serive :: deletePost :: error", error);
+            console.log("Appwrite service :: deletePost :: error", error);
             return false
         }
     }
@@ -74,10 +74,9 @@ export class Service {
                 conf.appwriteDatabaseId,
                 conf.appwriteCollectionId,
                 slug
-
             )
         } catch (error) {
-            console.log("Appwrite serive :: getPost :: error", error);
+            console.log("Appwrite service :: getPost :: error", error);
             return false
         }
     }
@@ -90,7 +89,6 @@ export class Service {
                 queries,
             )
         } catch (error) {
-            // Handle specific errors
             if (error.code === 401 || error.code === 403) {
                 console.warn("⚠️ Permission denied: Please check collection permissions in Appwrite Console");
                 return { documents: [], total: 0 };
@@ -100,9 +98,6 @@ export class Service {
         }
     }
 
-
-    // file upload service
-
     async uploadFile(file) {
         try {
             return await this.bucket.createFile(
@@ -111,17 +106,16 @@ export class Service {
                 file
             )
         } catch (error) {
-            console.log("Appwrite serive :: uploadFile :: error", error);
+            console.log("Appwrite service :: uploadFile :: error", error);
             return false
         }
     }
 
-    async deleteFile(slug) {
+    async deleteFile(fileId) {
         try {
-            await this.databases.deleteDocument(
-                conf.appwriteDatabaseId,
-                conf.appwriteCollectionId,
-                slug
+            await this.bucket.deleteFile(
+                conf.appwriteBucketId,
+                fileId
             )
             return true
         } catch (error) {
@@ -135,21 +129,17 @@ export class Service {
             fileId
         );
     }
-    // Get posts by specific user
-    // In appwrite/config.js - inside your Service class
 
     async getUserPosts(userId) {
         try {
             return await this.databases.listDocuments(
                 conf.appwriteDatabaseId,
                 conf.appwriteCollectionId,
-                [
-                    Query.equal("userId", userId)
-                ]
+                [Query.equal("userId", userId)]
             );
         } catch (error) {
             console.log("Appwrite service :: getUserPosts :: error", error);
-            return { documents: [] }; // Return empty array instead of false
+            return { documents: [] };
         }
     }
 
@@ -177,6 +167,7 @@ export class Service {
             console.log("Appwrite service :: deleteLike :: error", error);
         }
     }
+
     async createComment(postId, userId, content) {
         try {
             return await this.databases.createDocument(
@@ -195,13 +186,14 @@ export class Service {
             return await this.databases.listDocuments(
                 conf.appwriteDatabaseId,
                 conf.appwriteCommentsCollectionId,
-                [ Query.equal("postId", [ postId ]), Query.orderDesc("$createdAt") ]
+                [Query.equal("postId", [postId]), Query.orderDesc("$createdAt")]
             );
         } catch (error) {
             console.log("Appwrite service :: getComments :: error", error);
             return { documents: [] };
         }
     }
+
     async deleteComment(commentId) {
         try {
             await this.databases.deleteDocument(
@@ -217,6 +209,5 @@ export class Service {
     }
 }
 
-
-const service = new Service()
-export default service
+const service = new Service();
+export default service;
