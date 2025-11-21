@@ -39,7 +39,6 @@ export class AuthService {
         const user = await this.account.get();
         return user;
     } catch (error) {
-        // This error is EXPECTED when no user is logged in
         if (error.code === 401) {
             console.log("No active session - user not logged in");
             return null;
@@ -57,6 +56,7 @@ export class AuthService {
             console.log("Appwrite service :: logout :: error", error);
         }
     }
+    
 }
 
 const authService = new AuthService();
